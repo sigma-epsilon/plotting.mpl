@@ -1,0 +1,251 @@
+# Python CircleCI 2.0 configuration file
+version: 2.1
+
+orbs:
+  # The python orb contains a set of prepackaged circleci configuration you can use repeatedly in your configurations files
+  # Orb commands and jobs help you with common scripting around a language/tool
+  # so you dont have to copy and paste it everywhere.
+  # See the orb documentation here: https://circleci.com/developer/orbs/orb/circleci/python
+  python: circleci/python@2.1.1
+  codecov: codecov/codecov@3
+
+commands:
+  create_enviroment_file:
+    description: "Create an enviroment file and set it as BASH_ENV"
+    parameters:
+      file:
+        description: "The name of the enviroment file"
+        default: .env
+        type: string
+    steps:
+      - run:
+          name: Creating enviroment file
+          command: touch <<parameters.file>>
+
+  load_enviroment_file:
+    description: "Set an enviroment file as BASH_ENV"
+    parameters:
+      file:
+        description: "The name of the enviroment file"
+        default: .env
+        type: string
+    steps:
+      - run:
+          name: Set enviroment file
+          command: BASH_ENV=<<parameters.file>>
+
+  load_enviroment_variables:
+    description: "Load enviroment variables from BASH_ENV"
+    steps:
+      - run:
+          command: source $BASH_ENV
+
+  retrieve_package_name:
+    description: "Retrieve package name and store it as PACKAGE_NAME"
+    parameters:
+      path:
+        description: "The name of the source root folder"
+        default: src
+        type: string
+    steps:
+      - run:
+          name: Retrieve package name
+          command: |
+            package_name=$(ls <<parameters.path>>)
+            echo "Package name: $package_name"
+            echo "PACKAGE_NAME=$package_name" >> $BASH_ENV
+
+  check_for_version_update:
+    description: | 
+      Checks for an update in the version number of the module and sets the following enviroment variables: 
+        - NEEDS_PUBLISH as 'True' or 'False'
+        - LOCAL_VERSION as a string
+        - LATEST_VERSION as a string
+    steps:
+      - run:
+          name: Check for version update
+          command: |
+            latest_version=$(python3 -c "import requests, json; response = requests.get('https://pypi.org/pypi/$PACKAGE_NAME/json'); data = json.loads(response.text); print(data['info']['version'])")
+            echo "Latest version on PyPI: $latest_version"
+
+            init_path="$src/$PACKAGE_NAME/__init__.py"
+            init_contents=$(cat "$init_path")
+            local_version=$(echo "$init_contents" | awk -F'"' '/__version__/{gsub(/"/, "", $2); print $2}')
+            echo "Local version: $local_version"
+
+            is_greater=$(python3 -c "from packaging import version; print(version.parse('$local_version') > version.parse('$latest_version'))")
+
+            if [[ $is_greater == "True"]]; then
+              needs_publish="True"
+            else
+              needs_publish="False"
+            fi
+
+            echo "LOCAL_VERSION=$local_version" >> $BASH_ENV
+            echo "LATEST_VERSION=$latest_version" >> $BASH_ENV
+            echo "NEEDS_PUBLISH=$needs_publish" >> $BASH_ENV
+
+  build_wheel:
+    description: "Build the wheel"
+    steps:
+      - run:
+          name: Build wheel
+          command: |
+            pip install wheel twine
+            python setup.py install
+            python setup.py sdist bdist_wheel
+
+jobs:
+  initialize:
+    description: |
+      "Performs checkout, installs the necessary packages, creates enviroment variables, "
+      "builds the source and binary distributions and persists the folder to the workspace."
+    docker:
+      - image: cimg/python:3.10
+    steps:
+      - checkout
+      - run:
+          command: pip install packaging
+      - create_enviroment_file:
+          file: .env
+      - load_enviroment_file:
+          file: .env
+      - retrieve_package_name:
+          path: src
+      - load_enviroment_variables
+      - check_for_version_update
+      - python/install-packages:
+          pkg-manager: pip
+          pip-dependency-file: requirements.txt
+      - build_wheel
+      - persist_to_workspace:
+          root: ~/project
+          paths:
+            - .
+
+  run-tests:
+    description: Runs tests using pytest
+    docker:
+      - image: cimg/python:3.10
+    working_directory: ~/project
+    steps:
+      - attach_workspace:
+          at: .
+      - run:
+          name: Run tests
+          command: |
+            python setup.py install
+            pip install pytest
+            python -m pytest
+
+  publish-to-TestPyPI:
+    # tests publication to PyPI using testpypi
+    docker:
+      - image: cimg/python:3.10
+    working_directory: ~/project
+    steps:
+      - attach_workspace:
+          at: .
+      - load_enviroment_file:
+          file: ".env"
+      - load_enviroment_variables
+      - run:
+          name: Deploy to TestPYPI
+          command: |
+            # Compare versions
+            if [[ $NEEDS_PUBLISH" == "True" ]]; then
+              echo "New version detected. Testing publication to testPyPI."
+              pip install wheel twine
+              python3 setup.py sdist bdist_wheel
+              python3 -m twine upload --repository testpypi --skip-existing dist/*
+            else
+              echo "No new version detected."
+            fi
+
+  publish-to-PyPI:
+    docker:
+      - image: cimg/python:3.10
+    working_directory: ~/project
+    steps:
+      - attach_workspace:
+          at: .
+      - load_enviroment_file:
+          file: ".env"
+      - load_enviroment_variables
+      - run:
+          name: Deploy to pypi
+          command: |
+            if [[ $NEEDS_PUBLISH" == "True" ]]; then
+              echo "New version detected. Publishing to PyPI."
+              pip install wheel twine
+              python3 setup.py sdist bdist_wheel
+              python3 -m twine upload --skip-existing dist/*
+            else
+              echo "No new version detected."
+            fi
+
+  test310:
+    docker:
+      - image: cimg/python:3.10
+    working_directory: ~/project
+    steps:
+      - attach_workspace:
+          at: .
+      - python/install-packages:
+          pkg-manager: pip
+          pip-dependency-file: dev-requirements.txt
+          app-dir: ~/project
+      - run:
+          name: Run tests and measure coverage
+          command: |
+            python setup.py install
+            pip install pytest pytest-cov
+            pytest --cov
+      - run:
+          name: Generate html report
+          command: pytest --cov-report html
+      - store_artifacts:
+          path: ~/project/htmlcov
+
+  tox-test:
+    docker:
+      - image: fkrull/multi-python
+    working_directory: ~/project
+    steps:
+      - checkout
+      - run:
+          name: Test
+          command: tox
+
+workflows:
+  version: 2
+
+  main:
+    # there must be a predefined context in CircleCI under name 'pypi deploy'with the authentication
+    # credentials defined as enviroment variables
+    jobs:
+      - initialize
+
+      - run-tests:
+          requires:
+            - initialize
+
+      - publish-to-TestPyPI:
+          context:
+            - pypi deploy
+          requires:
+            - run-tests
+          filters:
+            branches:
+              only:
+                - main
+
+      - publish-to-PyPI:
+          context:
+            - pypi deploy
+          requires:
+            - publish-to-TestPyPI
+          filters:
+            branches:
+              only:
+                - main
