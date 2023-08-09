@@ -6,7 +6,10 @@ import matplotlib.pyplot as plt
 
 
 def get_fig_axes(*args, data=None, fig=None, axes=None, shape=None,
-                 horizontal=False, ax=None, fig_kw=None, **kwargs):
+                 horizontal=False, ax=None, fig_kw=None, **kwargs) -> tuple:
+    """
+    Returns a figure and an axes object.
+    """
     if fig is not None:
         if axes is not None:
             return fig, axes
@@ -52,6 +55,9 @@ def decorate_ax(*, fig=None, ax=None, aspect='equal', xlim=None,
                 ylim=None, axis='on', offset=0.05, points=None,
                 axfnc: Callable = None, title=None, suptitle=None,
                 label=None, **__):
+    """
+    Decorates an axis using the most often used modifiers.
+    """
     assert ax is not None, "A matplotlib Axes object must be provided with " \
         "keyword argument 'ax'!"
     if axfnc is not None:
