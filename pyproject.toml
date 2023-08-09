@@ -8,7 +8,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "sigmaepsilon.plotting.mpl"
-version = "1.0.0"
+version = "1.0.1"
 description = "Utilities for plotting with matplotlib."
 classifiers=[
         "Development Status :: 5 - Production/Stable",
