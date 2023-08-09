@@ -1,7 +1,5 @@
 # **SigmaEpsilon.Plotting.Mpl** - Utilities for plotting with matplotlib
 
-![ ](logo.png)
-
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/sigma-epsilon/sigmaepsilon.plotting.mpl/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/sigma-epsilon/sigmaepsilon.plotting.mpl/tree/main)
 [![Documentation Status](https://readthedocs.org/projects/sigmaepsilonplottingmpl/badge/?version=latest)](https://sigmaepsilonplottingmpl.readthedocs.io/en/latest/?badge=latest)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
