@@ -7,3 +7,4 @@ Examples
 
     examples/parallel.ipynb
     examples/triplot.ipynb
+    examples/triplot_hinton.ipynb
