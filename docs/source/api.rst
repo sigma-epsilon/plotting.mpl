@@ -1,12 +1,12 @@
 API Reference
 =============
 
-.. automodule:: dewloosh.mpl.triplot
+.. automodule:: sigmaepsilon.plotting.mpl.triplot
     :members: 
 
-.. automodule:: dewloosh.mpl.parallel
+.. automodule:: sigmaepsilon.plotting.mpl.parallel
     :members: 
 
-.. automodule:: dewloosh.mpl.d2
+.. automodule:: sigmaepsilon.plotting.mpl.d2
     :members: 
     
