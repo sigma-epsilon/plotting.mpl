@@ -7,6 +7,7 @@ from matplotlib.path import Path
 from matplotlib.patches import PathPatch
 import matplotlib.gridspec as gridspec
 from matplotlib.widgets import Slider
+from matplotlib.figure import Figure
 import numpy as np
 from numpy import ndarray
 
@@ -37,14 +38,14 @@ def parallel(
     ranges:Iterable=None,
     return_figure:bool=True,
     **_,
-):
+) -> Union[Figure, None]:
     """
     Parameters
     ----------
-    data: list of arrays
+    data: Union[list, dict, numpy.ndarray]
         A list of numpy.ndarray for each column. Each array is 1d with a length of N,
         where N is the number of data records (the number of lines).
-    labels: Iterable, Optinal
+    labels: Iterable, Optional
         Labels for the columns. If provided, it must have the same length as `data`.
     padding: float, Optional
         Controls the padding around the axes.
@@ -74,6 +75,7 @@ def parallel(
     >>> values = [np.random.rand(150) for i in range(10)]
     >>> parallel(values, labels=labels, padding=0.05, lw=0.2,
     ...          colors=colors, title='Parallel Plot with Random Data')
+    <matplotlib.figure.Figure object at ...>
     """
 
     if isinstance(data, dict):
@@ -190,7 +192,7 @@ def aligned_parallel(
     xoffset=0.0,
     yoffset=0.0,
     **kwargs,
-):
+) -> Union[Figure, None]:
     """
     Parameters
     ----------
@@ -216,7 +218,6 @@ def aligned_parallel(
         Default is 0.
     suptitle: str, Optional
         See Matplotlib's docs for the details. Default is None.
-
     slider: bool, Optional
         If True, a slider is added to the figure for interactive plots.
         Default is False.
@@ -241,12 +242,12 @@ def aligned_parallel(
 
     Example
     -------
-
     >>> from sigmaepsilon.plotting.mpl import aligned_parallel
     >>> labels = ['a', 'b', 'c']
     >>> values = np.array([np.random.rand(150) for _ in labels]).T
     >>> datapos = np.linspace(-1, 1, 150)
     >>> aligned_parallel(values, datapos, labels=labels, yticks=[-1, 1])
+    <matplotlib.figure.Figure object at ...>
     """
     # init
     fig = plt.figure(**kwargs)

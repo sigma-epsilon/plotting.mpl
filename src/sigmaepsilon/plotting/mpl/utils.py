@@ -48,10 +48,10 @@ def get_fig_axes(*args, data=None, fig=None, axes=None, shape=None,
     return None, None
 
 
-def decorate_ax(*args, fig=None, ax=None, aspect='equal', xlim=None,
+def decorate_ax(*, fig=None, ax=None, aspect='equal', xlim=None,
                 ylim=None, axis='on', offset=0.05, points=None,
                 axfnc: Callable = None, title=None, suptitle=None,
-                label=None, **kwargs):
+                label=None, **__):
     assert ax is not None, "A matplotlib Axes object must be provided with " \
         "keyword argument 'ax'!"
     if axfnc is not None:
